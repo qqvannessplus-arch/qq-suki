@@ -1,0 +1,189 @@
+<!-- templates/walkin_form.html -->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จองคิว - Buffet Queue</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- ✅ 1. Import LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <style>
+        body { background-color: #f8f9fa; }
+        .pax-btn {
+            height: 70px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 2px solid #dee2e6;
+            background-color: white;
+            color: #495057;
+            transition: all 0.2s;
+        }
+        .pax-btn:hover, .pax-btn.active {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+            color: #0d6efd;
+            transform: scale(1.05);
+        }
+        /* Loading Overlay Style */
+        #loadingOverlay {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 9999;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🌀 Loading Overlay (ตัวหมุนๆ) -->
+    <div id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        <p class="mt-3 text-muted fw-bold">กำลังเชื่อมต่อระบบ...</p>
+    </div>
+
+    <div class="container mt-5">
+        <div class="card shadow border-0 rounded-4">
+            <div class="card-body p-4 text-center">
+                <h1 class="fw-bold text-primary mb-2">🍲 Buffet Queue</h1>
+                <p class="text-muted mb-4">ยินดีต้อนรับครับ กรุณาระบุจำนวนท่าน</p>
+
+                <form action="/walkin/submit" method="POST">
+                    
+                    <!-- ปุ่มเลือกจำนวนคน -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">จำนวนลูกค้า (ท่าน)</label>
+                        <div class="row row-cols-3 g-2">
+                            <div class="col"><button type="button" class="btn w-100 pax-btn" onclick="selectPax(1)">1</button></div>
+                            <div class="col"><button type="button" class="btn w-100 pax-btn" onclick="selectPax(2)">2</button></div>
+                            <div class="col"><button type="button" class="btn w-100 pax-btn" onclick="selectPax(3)">3</button></div>
+                            <div class="col"><button type="button" class="btn w-100 pax-btn" onclick="selectPax(4)">4</button></div>
+                            <div class="col"><button type="button" class="btn w-100 pax-btn" onclick="selectPax(5)">5</button></div>
+                            <div class="col"><button type="button" class="btn w-100 pax-btn" onclick="selectPax(6)">6+</button></div>
+                        </div>
+
+                        <!-- Input จำนวนคน -->
+                        <input type="number" name="pax" id="paxInput" class="form-control mt-3 text-center fs-4" placeholder="ระบุจำนวน" required min="1" style="display:none;">
+                    </div>
+
+                    <!-- ✅ Hidden Input เก็บ LINE ID -->
+                    <input type="hidden" name="line_user_id" id="lineUserIdField">
+
+                    <!-- ✅ Alert สถานะ -->
+                    <div id="lineStatus" class="alert alert-secondary py-1" style="font-size: 0.8rem; display:none;">
+                        กำลังเชื่อมต่อ LINE...
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 fs-4 rounded-pill shadow-sm">
+                        รับบัตรคิว 🎫
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script รวม Logic ทั้งหมด -->
+    <script>
+        // --- 1. Logic เลือกจำนวนคน ---
+        function selectPax(num) {
+            const input = document.getElementById('paxInput');
+            input.value = num;
+            if (num >= 6) {
+                input.style.display = 'block';
+                input.focus();
+            } else {
+                input.style.display = 'none';
+            }
+            document.querySelectorAll('.pax-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // --- 2. Logic เริ่มต้นระบบ (Reset -> LocalStorage -> LIFF) ---
+        
+        async function initSystem() {
+            // A. เช็คคำสั่ง Reset จาก Server (แก้ Loop นรก)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('reset')) {
+                console.log("♻️ Server สั่งล้างคิวเก่าทิ้ง!");
+                localStorage.removeItem('my_suki_queue_id');
+                // ล้าง URL ให้สะอาด
+                window.history.replaceState({}, document.title, "/walkin");
+            }
+
+            // B. เช็คความจำเครื่อง (ถ้ามีคิวค้าง ดีดไปหน้าดูคิวทันที)
+            const savedQueueId = localStorage.getItem('my_suki_queue_id');
+            if (savedQueueId) {
+                console.log("🚀 เจอคิวค้างในเครื่อง! พาไปดูคิว...");
+                window.location.href = "/queue/" + savedQueueId;
+                return; // จบการทำงานหน้านี้
+            }
+
+            // C. ถ้าไม่มีคิวค้าง ให้เริ่ม LIFF
+            await initLIFF();
+            document.getElementById('loadingOverlay').style.display = 'none';
+            console.log("🔧 Local Mode: ข้ามระบบ LINE แล้ว");
+        }
+
+        // --- 3. Logic LIFF ---
+        async function initLIFF() {
+            try {
+                // ⚠️⚠️⚠️ ใส่ LIFF ID ของคุณตรงนี้ ⚠️⚠️⚠️
+                await liff.init({ liffId: "2008763658-K62w632B" });
+
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    
+                    // ใส่ ID ลงฟอร์ม
+                    document.getElementById('lineUserIdField').value = profile.userId;
+
+                    // โชว์สถานะ
+                    const statusDiv = document.getElementById('lineStatus');
+                    statusDiv.style.display = 'block';
+                    statusDiv.className = 'alert alert-success py-1';
+                    statusDiv.innerHTML = `✅ เชื่อมต่อคุณ: <b>${profile.displayName}</b> แล้ว`;
+
+                    // เช็ค ID กับ Server (เผื่อเปลี่ยนเครื่อง)
+                    await checkLineAccount(profile.userId);
+                } else {
+                    // ถ้ายังไม่ล็อกอิน ให้เด้งไปล็อกอิน
+                    liff.login({ redirectUri: window.location.href });
+                }
+            } catch (err) {
+                console.error("LIFF Error:", err);
+                // ถ้า Error (เช่น เน็ตหลุด / ไม่ให้สิทธิ์) ก็ปล่อยให้จองแบบปกติ
+            } finally {
+                // ✅ ซ่อนตัวหมุนๆ เมื่อโหลดเสร็จ (เพื่อให้ลูกค้ากดปุ่มได้)
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        // --- 4. Logic เช็ค Server (เผื่อเปลี่ยนเครื่อง) ---
+        async function checkLineAccount(userId) {
+            try {
+                const response = await fetch('/api/check-my-queue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ line_user_id: userId })
+                });
+                const result = await response.json();
+                
+                if (result.status === 'found') {
+                    // เจอคิวค้างในระบบ! บันทึกลงเครื่องแล้วพาไป
+                    localStorage.setItem('my_suki_queue_id', result.queue_id);
+                    window.location.href = '/queue/' + result.queue_id;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // เริ่มทำงานทันที
+        initSystem();
+
+    </script>
+</body>
+</html>

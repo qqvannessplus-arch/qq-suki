@@ -1,0 +1,69 @@
+/* static/admin.css */
+
+body {
+    background-color: #f8f9fa;
+    font-family: sans-serif;
+}
+
+/* --- กลุ่มปุ่มลอยมุมขวาบน --- */
+.floating-btn-group {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+}
+
+/* --- การ์ดโต๊ะ --- */
+.table-card {
+    transition: transform 0.2s ease-in-out;
+    border-width: 2px;
+    background-color: #fff;
+    position: relative;
+}
+
+.table-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.status-busy {
+    border-color: #dc3545 !important;
+    background-color: rgba(220, 53, 69, 0.05) !important;
+    color: #a71d2a;
+}
+
+.status-empty {
+    border-color: #198754 !important;
+    background-color: rgba(25, 135, 84, 0.05) !important;
+    color: #0f5132;
+}
+
+.table-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+/* --- ปุ่มลบ (X) --- */
+.btn-delete-custom {
+    /* --- เพิ่ม 4 บรรทัดนี้ เพื่อจัดตำแหน่ง --- */
+    position: absolute; 
+    top: 5px; 
+    right: 5px; 
+    z-index: 10;
+    /* ----------------------------------- */
+
+    color: #adb5bd;
+    padding: 0px 6px;
+    font-size: 1.1rem;
+    line-height: 1;
+    border-radius: 4px;
+    background: transparent;
+}
+
+.btn-delete-custom:hover {
+    color: #dc3545; 
+    background-color: rgba(220, 53, 69, 0.1);
+    cursor: pointer;
+    transform: scale(1.1); /* เพิ่มลูกเล่นขยายหน่อยตอนชี้ */
+}

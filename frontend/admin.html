@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - จัดการร้าน</title>
+
+    <!-- Bootstrap 5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- CSS ของเรา -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='admin.css') }}"
+    />
+  </head>
+  <body>
+    <!-- แสดง Flash Message (แจ้งเตือนผลลัพธ์) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container mt-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- ==============================
+         🔘 Floating Button Group (มุมขวาบน)
+         ============================== -->
+    <div class="floating-btn-group">
+      <!-- 1. ปุ่ม Walk-in (สีเหลือง) -->
+      <button
+        type="button"
+        class="btn btn-warning shadow fw-bold me-2"
+        data-bs-toggle="modal"
+        data-bs-target="#qrModal"
+      >
+        📲 QR หน้าร้าน
+      </button>
+
+      <!-- 2. ปุ่ม Reservation (สีเขียว) -->
+      <button
+        type="button"
+        class="btn btn-success shadow fw-bold me-2"
+        data-bs-toggle="modal"
+        data-bs-target="#qrBookingModal"
+      >
+        📅 QR จองโต๊ะ
+      </button>
+
+      <!-- 3. ปุ่ม Dashboard (สีฟ้า) -->
+      <a href="/dashboard" class="btn btn-info text-white shadow fw-bold">
+        📊 สรุปยอด
+      </a>
+    </div>
+
+    <!-- ==============================
+         🖼️ Modal 1: QR Code Walk-in
+         ============================== -->
+    <div class="modal fade" id="qrModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title fw-bold">
+              📲 QR Code สำหรับลูกค้า (Walk-in)
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body text-center p-4">
+            <p class="mb-3">สแกนเพื่อรับบัตรคิวหน้าร้าน</p>
+            <div id="qrcode" class="d-flex justify-content-center mb-3"></div>
+            <h5 class="text-primary fw-bold" id="linkText">Loading...</h5>
+            <small class="text-muted"
+              >ปริ้นหน้านี้แปะไว้หน้าร้านได้เลยครับ</small
+            >
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==============================
+         🖼️ Modal 2: QR Code Booking
+         ============================== -->
+    <div class="modal fade" id="qrBookingModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title fw-bold">📅 QR Code จองล่วงหน้า</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body text-center p-4">
+            <p class="mb-3">สแกนเพื่อเข้าสู่หน้าจองโต๊ะ</p>
+            <div
+              id="qrcodeBooking"
+              class="d-flex justify-content-center mb-3"
+            ></div>
+            <h5 class="text-success fw-bold" id="linkTextBooking">
+              Loading...
+            </h5>
+            <small class="text-muted"
+              >ส่งรูปนี้ให้ลูกค้าจองผ่านไลน์ได้เลยครับ</small
+            >
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==============================
+         🏠 เนื้อหาหลัก (Main Container)
+         ============================== -->
+    <div class="container mt-5 mb-5">
+      <h1 class="mb-4 text-center fw-bold">ระบบจัดการร้าน</h1>
+
+      <!-- 1. ตั้งเวลาบุฟเฟต์ -->
+      <div
+        class="bg-white p-3 rounded shadow-sm mb-4 border-start border-5 border-primary"
+      >
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h5 class="mb-0 text-primary fw-bold">⏰ ตั้งเวลาบุฟเฟต์ (นาที)</h5>
+            <small class="text-muted"
+              >เมื่อกดปุ่ม Start ระบบจะใช้เวลาที่ตั้งตรงนี้คำนวณเวลาจบ</small
+            >
+          </div>
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text bg-primary text-white"
+                >⏱️ นาที</span
+              >
+              <input
+                type="number"
+                id="globalDuration"
+                class="form-control text-center fw-bold fs-5"
+                value="90"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. ตาราง Waiting List & Reservation -->
+      <div class="card shadow-sm mb-5">
+        <div class="card-header bg-white pt-3 pb-0">
+          <ul
+            class="nav nav-tabs card-header-tabs"
+            id="queueTabs"
+            role="tablist"
+          >
+            <!-- Tab 1: Walk-in -->
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link active fw-bold text-primary"
+                id="walkin-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#walkin-pane"
+                type="button"
+                role="tab"
+              >
+                🚶 คิวหน้าร้าน ({{ waiting_list|length }})
+              </button>
+            </li>
+            <!-- Tab 2: Reservations -->
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link fw-bold text-success"
+                id="reservation-tab"
+                data-bs-toggle="tab"
+                data-bs-target="#reservation-pane"
+                type="button"
+                role="tab"
+              >
+                📅 จองวันนี้ ({{ reservations|length }})
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-body">
+          <div class="tab-content" id="queueTabsContent">
+            <!-- TAB PANE 1: WALK-IN -->
+            <div
+              class="tab-pane fade show active"
+              id="walkin-pane"
+              role="tabpanel"
+            >
+              {% if waiting_list %}
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ลำดับ</th>
+                      <th>หมายเลข</th>
+                      <th>จำนวน</th>
+                      <th>เวลาจอง</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for q in waiting_list %}
+                    <tr>
+                      <td class="text-muted">{{ loop.index }}</td>
+                      <td>
+                        <span
+                          class="badge rounded-pill fs-5 {{ 'bg-primary' if q.queue_type == 'A' else 'bg-warning text-dark' }}"
+                        >
+                          {{ q.queue_type }}-{{ '%03d' % q.id }}
+                        </span>
+                      </td>
+                      <td class="fw-bold">{{ q.pax }} ท่าน</td>
+                      <td>
+                        <small class="text-muted"
+                          >{{ q.created_at[11:16] }} น.</small
+                        >
+                      </td>
+                      <td>
+                        <div class="d-flex justify-content-center gap-2">
+                            <!-- ✅ ปุ่มเรียกคิว (LINE) -->
+                            {% if q.line_user_id %}
+                            <form action="/admin/notify/{{ q.id }}" method="POST">
+                                <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3" title="ส่งไลน์ตามลูกค้า">
+                                    🔔 เรียก
+                                </button>
+                            </form>
+                            {% else %}
+                            <button class="btn btn-secondary btn-sm rounded-pill px-3" disabled title="ลูกค้าไม่ได้ใช้ LINE">
+                                🔔
+                            </button>
+                            {% endif %}
+
+                            <!-- ปุ่มยกเลิกคิว -->
+                            <form
+                            action="/cancel-queue/{{ q.id }}"
+                            method="POST"
+                            onsubmit="return confirm('⚠️ ลูกค้าไม่อยู่/ยกเลิก ใช่หรือไม่?');"
+                            >
+                            <button
+                                type="submit"
+                                class="btn btn-outline-danger btn-sm rounded-pill px-3"
+                            >
+                                ❌
+                            </button>
+                            </form>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <div class="p-4 text-center text-muted">
+                <h4>🎉 คิวหน้าร้านว่าง</h4>
+                <p>ไม่มีลูกค้า Walk-in รออยู่ขณะนี้</p>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- TAB PANE 2: RESERVATIONS -->
+            <div class="tab-pane fade" id="reservation-pane" role="tabpanel">
+              {% if reservations %}
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                  <thead class="table-light">
+                    <tr>
+                      <th>เวลา</th>
+                      <th>ชื่อลูกค้า</th>
+                      <th>เบอร์โทร</th>
+                      <th>จำนวน</th>
+                      <th>สถานะ</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in reservations %}
+                    <tr
+                      class="{{ 'table-success' if r.status == 'confirmed' }}"
+                    >
+                      <td class="fw-bold text-primary fs-5">
+                        {{ r.booking_time[0:5] }} น.
+                      </td>
+                      <td class="text-start">{{ r.customer_name }}</td>
+                      <td>{{ r.phone }}</td>
+                      <td class="fw-bold">{{ r.num }} ท่าน</td>
+                      <td>
+                        {% if r.status == 'pending' %}
+                        <span class="badge bg-secondary">รอมาถึง</span>
+                        {% elif r.status == 'confirmed' %}
+                        <span class="badge bg-success">มาแล้ว</span>
+                        {% else %}
+                        <span class="badge bg-dark">{{ r.status }}</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <div class="d-flex justify-content-center gap-2">
+                          <form
+                            action="/cancel-reservation/{{ r.id }}"
+                            method="POST"
+                            onsubmit="return confirm('⚠️ ยกเลิกการจองของคุณ {{ r.customer_name }} ?');"
+                          >
+                            <button
+                              type="submit"
+                              class="btn btn-outline-danger btn-sm rounded-pill px-2"
+                              title="ยกเลิกการจอง"
+                            >
+                              ✕
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <div class="p-4 text-center text-muted">
+                <h4>📅 วันนี้ไม่มีการจอง</h4>
+                <p>สามารถรับลูกค้า Walk-in ได้เต็มที่</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. เพิ่มโต๊ะใหม่ -->
+      <div class="card shadow-sm mb-5">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">➕ เพิ่มโต๊ะใหม่</h5>
+        </div>
+        <div class="card-body">
+          <form action="/add-table" method="POST">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">ชื่อโต๊ะ</label>
+                <input
+                  type="text"
+                  name="table_name"
+                  class="form-control"
+                  placeholder="เช่น A-01"
+                  required
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">จำนวนที่นั่ง</label>
+                <input
+                  type="number"
+                  name="capacity"
+                  class="form-control"
+                  placeholder="4"
+                  required
+                />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">โซน</label>
+                <select name="zone_type" class="form-select">
+                  <option value="walk_in">หน้าร้าน (Walk-in)</option>
+                  <option value="reservation">จองล่วงหน้า (Reservation)</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-3">
+              บันทึกข้อมูล
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- =============================================
+           4. ผังโต๊ะ Dashboard
+           ============================================= -->
+
+      <!-- ZONE 1: WALK-IN TABLES -->
+      <div class="d-flex align-items-center mb-3 mt-4">
+        <h3 class="text-primary fw-bold me-2">🚶 โต๊ะหน้าร้าน (Walk-in) (โต๊ะ A = น้อยกว่า 4 ท่าน) (โต๊ะ B = 5 ท่านขึ้นไป)</h3>
+        <span class="badge bg-primary rounded-pill"
+          >{{ walkin_tables|length }} โต๊ะ</span
+        >
+      </div>
+
+      <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3 mb-5">
+        {% for table in walkin_tables %}
+        <div class="col">
+          <div
+            class="card h-100 text-center shadow-sm table-card {{ 'status-busy' if table.status == 'busy' else 'status-empty' }}"
+          >
+            <!-- ปุ่มลบโต๊ะ -->
+            <form
+              action="/delete-table/{{ table.id }}"
+              method="POST"
+              class="js-delete-form"
+              onsubmit="return confirm('ยืนยันลบโต๊ะ {{ table.table_name }}?');"
+            >
+              <button
+                type="submit"
+                class="btn btn-sm border-0 btn-delete-custom"
+                title="ลบโต๊ะนี้"
+              >
+                ✕
+              </button>
+            </form>
+
+            <div class="card-body">
+              <div class="table-icon">
+                {% if table.status == 'busy' %} 🍲 {% else %} 🪑 {% endif %}
+              </div>
+
+              <h4 class="card-title fw-bold">{{ table.table_name }}</h4>
+              <p class="card-text small mb-2">{{ table.capacity }} ท่าน</p>
+
+              {% if table.status == 'busy' %}
+              <div
+                class="alert alert-danger p-1 mb-2"
+                style="font-size: 0.85rem"
+              >
+                หมดเวลา:
+                <strong
+                  >{{ table.final_time[11:16] if table.final_time else '??:??'
+                  }}</strong
+                >
+                น.
+              </div>
+              {% endif %}
+
+              <!-- ปุ่ม Action Walk-in -->
+              {% if table.status == 'empty' %}
+              <form
+                action="/start-table/{{ table.id }}"
+                method="POST"
+                class="js-start-form"
+              >
+                <input type="hidden" name="duration" value="" />
+                <button class="btn btn-sm btn-success w-100">
+                  เรียกคิว (Start)
+                </button>
+              </form>
+              {% else %}
+              <form
+                action="/clear-table/{{ table.id }}"
+                method="POST"
+                class="js-clear-form"
+              >
+                <button class="btn btn-sm btn-danger w-100">
+                  เช็คบิล (Clear)
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+          <div class="alert alert-light text-center border">
+            📭 ไม่มีโต๊ะโซน Walk-in
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- เส้นกั้น -->
+      <hr class="border-3 border-secondary opacity-25 my-5" />
+
+      <!-- ZONE 2: RESERVATION TABLES -->
+      <div class="d-flex align-items-center mb-3">
+        <h3 class="text-warning text-dark fw-bold me-2">
+          📅 โต๊ะจอง (Reservation)
+        </h3>
+        <span class="badge bg-warning text-dark rounded-pill"
+          >{{ reservation_tables|length }} โต๊ะ</span
+        >
+      </div>
+
+      <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3 mb-5">
+        {% for table in reservation_tables %}
+        <div class="col">
+          <!-- การ์ดโซนจอง มีขอบส้ม -->
+          <div
+            class="card h-100 text-center shadow-sm table-card {{ 'status-busy' if table.status == 'busy' else 'status-empty' }}"
+            style="border-top: 5px solid #ffc107"
+          >
+            <form
+              action="/delete-table/{{ table.id }}"
+              method="POST"
+              class="js-delete-form"
+              onsubmit="return confirm('ยืนยันลบโต๊ะ {{ table.table_name }}?');"
+            >
+              <button
+                type="submit"
+                class="btn btn-sm border-0 btn-delete-custom"
+                title="ลบโต๊ะนี้"
+              >
+                ✕
+              </button>
+            </form>
+
+            <div class="card-body">
+              <div class="table-icon">
+                {% if table.status == 'busy' %} 🍲 {% else %} 🎫 {% endif %}
+              </div>
+
+              <h4 class="card-title fw-bold">{{ table.table_name }}</h4>
+              <p class="card-text small mb-2">{{ table.capacity }} ท่าน</p>
+
+              {% if table.status == 'busy' %}
+              <div
+                class="alert alert-danger p-1 mb-2"
+                style="font-size: 0.85rem"
+              >
+                หมดเวลา:
+                <strong
+                  >{{ table.final_time[11:16] if table.final_time else '??:??'
+                  }}</strong
+                >
+                น.
+              </div>
+              {% endif %}
+
+              <!-- ปุ่ม Action Reservation -->
+              {% if table.status == 'empty' %}
+              <form
+                action="/start-table/{{ table.id }}"
+                method="POST"
+                class="js-start-form"
+              >
+                <input type="hidden" name="duration" value="" />
+                <!-- เปลี่ยนปุ่มเป็นสีเหลือง + ข้อความต่าง -->
+                <button class="btn btn-sm btn-warning fw-bold w-100">
+                  เริ่มทาน (Start)
+                </button>
+              </form>
+              {% else %}
+              <form
+                action="/clear-table/{{ table.id }}"
+                method="POST"
+                class="js-clear-form"
+              >
+                <button class="btn btn-sm btn-danger w-100">
+                  เช็คบิล (Clear)
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+          <div class="alert alert-light text-center border">
+            📭 ไม่มีโต๊ะโซนจอง
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="mt-5 text-center">
+        <a href="/" class="text-decoration-none text-secondary"
+          >← กลับหน้าหลัก</a
+        >
+      </div>
+    </div>
+    <hr class="my-5" />
+
+    <div class="card bg-danger text-white mb-5">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold">ปิดยอดวัน (Close Day)</h5>
+          <p class="mb-0 small">
+            กดเมื่อปิดร้านแล้วเท่านั้น ระบบจะเก็บประวัติและรีเซ็ตเลขคิวเป็น 001
+            สำหรับพรุ่งนี้
+          </p>
+        </div>
+        <form
+          action="/close-day"
+          method="POST"
+          onsubmit="return confirm('⚠️ ยืนยันปิดยอดวัน?\n\n- คิวทั้งหมดจะถูกย้ายไปประวัติ\n- เลขคิวจะเริ่มนับ 1 ใหม่\n\nทำเมื่อร้านปิดแล้วเท่านั้น!');"
+        >
+          <button type="submit" class="btn btn-light text-danger fw-bold">
+            🛑 ปิดยอด / รีเซ็ตคิว
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- เรียกใช้ไฟล์ JS ของเรา -->
+    <script src="{{ url_for('static', filename='admin.js') }}"></script>
+  </body>
+</html>

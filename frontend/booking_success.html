@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จองสำเร็จ!</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .success-card {
+            max-width: 500px;
+            width: 90%;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            border: none;
+            overflow: hidden;
+            text-align: center;
+        }
+        .success-header {
+            background-color: #28a745; /* สีเขียว */
+            padding: 30px;
+            color: white;
+        }
+        .icon-box {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card success-card">
+        <div class="success-header">
+            <div class="icon-box">🎉</div>
+            <h2 class="fw-bold m-0">จองโต๊ะสำเร็จ!</h2>
+            <p class="mb-0 mt-2 text-white-50">ขอบคุณที่เลือกใช้บริการของเรา</p>
+        </div>
+        <div class="card-body p-4">
+            <h5 class="text-secondary mb-4">รายละเอียดการจอง</h5>
+            
+            <ul class="list-group list-group-flush text-start mb-4">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>👤 ชื่อลูกค้า</span>
+                    <strong class="text-primary">{{ name }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>📅 วันที่</span>
+                    <strong>{{ date }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>⏰ เวลา</span>
+                    <strong class="text-danger fs-5">{{ time }} น.</strong>
+                </li>
+            </ul>
+
+            <div class="alert alert-warning text-start" role="alert" style="font-size: 0.9rem;">
+                <strong>⚠️ หมายเหตุ:</strong> <br>
+                กรุณามาก่อนเวลาอย่างน้อย 10 นาที หากมาช้าเกิน 15 นาที ระบบอาจตัดสิทธิ์ให้คิวถัดไปครับ
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+                <a href="/booking" class="btn btn-success fw-bold">จองเพิ่มอีก</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

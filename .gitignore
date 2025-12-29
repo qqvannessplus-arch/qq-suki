@@ -1,0 +1,16 @@
+# ไฟล์ความลับ
+.env
+backend/.env
+
+# โฟลเดอร์ Environment และ Compiled files
+venv/
+backend/venv/
+__pycache__/
+*/__pycache__/
+*.py[cod]
+
+# ไฟล์โปรแกรมภายนอก (ไม่ต้องเอาขึ้น)
+*.exe
+*.ds_store
+ngrok.exe
+backend/ngrok.exe
