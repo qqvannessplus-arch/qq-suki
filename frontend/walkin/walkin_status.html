@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>สถานะคิว - Buffet Queue</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background-color: #f8f9fa; font-family: 'Kanit', sans-serif; }
+    .queue-card {
+      border: none; border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;
+    }
+    .queue-header {
+      background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+      color: white; padding: 30px 20px; text-align: center;
+    }
+    .dining-header {
+      background: linear-gradient(135deg, #198754, #20c997);
+      color: white; padding: 30px 20px; text-align: center;
+    }
+    .queue-number { font-size: 4rem; font-weight: 800; letter-spacing: 2px; }
+    .time-box {
+      background-color: #fff3cd; border: 2px solid #ffecb5;
+      color: #856404; padding: 15px; border-radius: 10px; margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="card queue-card">
+          
+          <!-- ✅ CASE 1: กำลังกิน (Dining) -->
+          {% if is_dining %}
+          <div class="dining-header">
+            <h2 class="fw-bold mb-0">🍽️ กำลังใช้บริการ</h2>
+            <p class="opacity-75 mb-0">ทานให้อร่อยนะครับ!</p>
+          </div>
+          <div class="card-body p-4 text-center">
+            <div class="py-3">
+              <h1 class="display-1">😋</h1>
+              <h4 class="mt-3 text-dark fw-bold">ถึงเวลาความอร่อย</h4>
+            </div>
+            <div class="time-box">
+              <small class="d-block text-uppercase fw-bold opacity-75">เวลาสิ้นสุดรอบ</small>
+              <h1 class="display-4 fw-bold text-danger mb-0">
+                {{ finish_time }}
+              </h1>
+            </div>
+            <p class="text-muted mt-3 small">*กรุณาเช็คบิลก่อนเวลาที่กำหนด</p>
+            <a href="/walkin?branch_id={{ queue.branch_id }}"
+              class="btn btn-outline-secondary w-100 rounded-pill mt-2">กลับหน้าหลัก</a>
+          </div>
+
+          <!-- ✅ CASE 2: รอคิว (Waiting) -->
+          {% else %}
+          <div class="queue-header">
+            <h5 class="mb-0 text-uppercase opacity-75">หมายเลขคิวของคุณ</h5>
+            <div class="queue-number">
+              {{ queue.queue_type }}-{{ '%03d' % queue.queue_no }}
+            </div>
+            <p class="mb-0 fs-5">จำนวน {{ queue.pax }} ท่าน</p>
+          </div>
+          <div class="card-body p-4 text-center">
+            
+            <div class="row mb-4">
+              <!-- ส่วนนับจำนวนคิวที่รอ -->
+              <div class="col-6 border-end">
+                <small class="text-muted d-block">รออีก (คิว)</small>
+                <h2 class="display-4 fw-bold text-primary mb-0">
+                  {{ queue.position_wait if queue.position_wait else '0' }}
+                </h2>
+              </div>
+
+              <!-- ส่วนเวลาที่รอ (แก้ใหม่) -->
+              <div class="col-6">
+                <small class="text-muted d-block">รอประมาณ</small>
+
+                {% if no_tables %}
+                    <!-- กรณีไม่มีโต๊ะ Type นี้เลย -->
+                    <h4 class="fw-bold text-danger mt-2">เต็ม/ไม่มีโต๊ะ</h4>
+                
+                {% elif time_diff > 0 %}
+                    <!-- กรณีต้องรอ (มีเวลา) -->
+                    <h2 class="display-4 fw-bold text-danger mb-0">
+                      {{ time_diff }}
+                    </h2>
+                    <small class="text-danger">นาที</small>
+
+                {% else %}
+                    <!-- กรณีถึงคิวแล้ว (0 นาที) -->
+                    <h3 class="fw-bold text-success mt-2">เร็วๆ นี้</h3>
+                    <small class="text-success">เตรียมตัวเลย!</small>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- กล่องข้อความแจ้งเตือน -->
+            <div class="alert alert-light border shadow-sm">
+                {% if no_tables %}
+                    <span class="text-danger">❌ สาขานี้ไม่มีโต๊ะสำหรับจำนวน {{ queue.pax }} ท่านครับ</span>
+                {% elif time_diff > 0 %} 
+                    เวลาเข้าโต๊ะโดยประมาณ: <br>
+                    <strong>{{ estimated_time }}</strong> 
+                {% else %} 
+                    สถานะ: <br>
+                    <strong class="text-success fs-5">✨ คิวใกล้ถึงแล้ว/โต๊ะว่าง</strong>
+                {% endif %}
+            </div>
+
+            <div class="d-grid gap-2 mt-4">
+                <!-- ปุ่มรีเฟรช -->
+                <button class="btn btn-primary rounded-pill py-2" onclick="window.location.reload()">
+                  🔄 รีเฟรชสถานะ
+                </button>
+                
+                <!-- ปุ่มยกเลิก -->
+                <form action="/cancel-queue/{{ queue.id }}?source=walkin&branch_id={{ queue.branch_id }}" method="POST"
+                  onsubmit="return confirm('⚠️ คุณต้องการยกเลิกคิวนี้ใช่หรือไม่?');">
+                  <button type="submit" class="btn btn-link text-danger text-decoration-none btn-sm">
+                    ขอยกเลิกคิว
+                  </button>
+                </form>
+            </div>
+
+          </div> <!-- ปิด card-body ของ waiting -->
+          {% endif %} <!-- ปิด if is_dining -->
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Script จัดการ LocalStorage (จำคิว) -->
+    <script>
+        // จำคิวและสาขา
+        localStorage.setItem("my_suki_queue_id", "{{ queue.id }}");
+        localStorage.setItem("my_suki_branch_id", "{{ queue.branch_id }}"); 
+
+        // ถ้าเสร็จแล้ว หรือ ยกเลิก ให้ลบความจำ
+        const status = "{{ queue.status }}";
+        if (status === "completed" || status === "cancelled") {
+            localStorage.removeItem("my_suki_queue_id");
+            localStorage.removeItem("my_suki_branch_id");
+        }
+    </script>
+</body>
+</html>

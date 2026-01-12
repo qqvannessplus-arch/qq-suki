@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เลือกสาขาเพื่อจัดการร้าน</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f4f6f9; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .branch-card { transition: all 0.3s; cursor: pointer; border: 2px solid transparent; }
+        .branch-card:hover { transform: translateY(-5px); border-color: #0d6efd; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .icon-box { font-size: 3rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container text-center">
+        <h1 class="mb-4 fw-bold">🏪 ระบบจัดการร้าน (Smart Queue)</h1>
+        <p class="text-muted mb-5">กรุณาเลือกสาขาที่คุณต้องการเข้าไปจัดการ</p>
+
+        <div class="row justify-content-center g-4">
+            <!-- วนลูปแสดงสาขาที่ส่งมาจาก Python -->
+            {% for branch in branches %}
+            <div class="col-md-5 col-lg-4">
+                <form action="/set-branch" method="POST">
+                    <input type="hidden" name="branch_id" value="{{ branch.id }}">
+                    <input type="hidden" name="branch_name" value="{{ branch.name }}">
+                    
+                    <button type="submit" class="card h-100 w-100 p-4 shadow-sm border-0 branch-card text-decoration-none text-dark">
+                        <div class="card-body">
+                            <div class="icon-box">🏢</div>
+                            <h3 class="card-title fw-bold">{{ branch.name }}</h3>
+                            <p class="card-text text-muted">{{ branch.desc }}</p>
+                            <span class="btn btn-outline-primary mt-3 w-100">
+                                เข้าจัดการร้าน
+                            </span>
+                        </div>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <p class="mt-5 text-muted small">*ในอนาคตจะมีระบบ Login ก่อนเลือกสาขา</p>
+    </div>
+</body>
+</html>

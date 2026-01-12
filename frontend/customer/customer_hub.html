@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เลือกสาขาใช้บริการ - Smart Queue</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8f9fa; }
+        .branch-card { 
+            border: none; 
+            border-radius: 15px; 
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .branch-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .queue-badge { font-size: 0.85rem; padding: 6px 12px; border-radius: 20px; display: inline-block;}
+        .btn-action { border-radius: 10px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="bg-dark text-white py-4 mb-5 shadow-sm">
+        <div class="container text-center">
+            <h1 class="fw-bold mb-0">🔥 Smart Buffet Suki</h1>
+            <p class="text-white-50 mt-2 mb-0">อร่อยไม่อั้น บริการรวดเร็วทันใจ</p>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <h3 class="fw-bold mb-4 text-center text-secondary">📍 กรุณาเลือกสาขาที่ใช้บริการ</h3>
+        
+        <div class="row g-4 justify-content-center">
+            {% for branch in branches %}
+            <div class="col-md-6 col-lg-5">
+                <div class="card branch-card h-100 p-3">
+                    <div class="card-body">
+                        
+                        <!-- ส่วนหัวการ์ด (ชื่อร้าน + ป้ายสถานะ) -->
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h3 class="card-title fw-bold text-primary">{{ branch.name }}</h3>
+                                <p class="text-muted small mb-0"><i class="bi bi-clock"></i> เปิดทุกวัน 10:00 - 22:00 น.</p>
+                            </div>
+                            
+                            <!-- ✅ แก้ไขตรงนี้: Group ป้ายสถานะให้อยู่ขวาสุด -->
+                            <div class="text-end d-flex flex-column align-items-end gap-1">
+                                <!-- 1. สถานะหน้าร้าน (Walk-in) -->
+                                {% if branch.waiting_count > 0 %}
+                                    <div class="queue-badge bg-danger text-white">
+                                        <span class="spinner-grow spinner-grow-sm me-1" role="status"></span>
+                                        หน้าร้าน {{ branch.waiting_count }} คิว
+                                    </div>
+                                {% else %}
+                                    <div class="queue-badge bg-success text-white">
+                                        <i class="bi bi-check-circle-fill me-1"></i> หน้าร้านว่าง
+                                    </div>
+                                {% endif %}
+
+                                <!-- 2. สถานะจองล่วงหน้า (Booking) -->
+                                {% if branch.booking_count > 0 %}
+                                    <div class="queue-badge bg-info text-dark border">
+                                        📅 จองวันนี้ {{ branch.booking_count }} คิว
+                                    </div>
+                                {% else %}
+                                    <div class="queue-badge bg-light text-muted border">
+                                        📅 ไม่มีคิวจอง
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- คำอธิบายสาขา -->
+                        <p class="card-text text-secondary bg-light p-3 rounded">
+                            {{ branch.desc or 'สาขานี้ให้บริการบุฟเฟต์เต็มรูปแบบ มีที่จอดรถสะดวกสบาย' }}
+                        </p>
+
+                        <hr>
+
+                        <!-- ปุ่ม Action -->
+                        <div class="row g-2">
+                            <div class="col-6">
+                                {% if branch.map_url %}
+                                <a href="{{ branch.map_url }}" target="_blank" class="btn btn-outline-secondary w-100 btn-action py-2">
+                                    <i class="bi bi-geo-alt-fill"></i> แผนที่
+                                </a>
+                                {% else %}
+                                <button class="btn btn-outline-secondary w-100 btn-action py-2" disabled>
+                                    <i class="bi bi-geo-alt-fill"></i> ไม่มีแผนที่
+                                </button>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <!-- ลิงก์ไปหน้าจอง หรือ รับบัตรคิว ของสาขานั้น -->
+                                <div class="dropdown">
+                                    <button class="btn btn-primary w-100 btn-action py-2 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        🚀 จองคิวเลย
+                                    </button>
+                                    <ul class="dropdown-menu w-100 text-center shadow">
+                                        
+                                        <!-- 1. แบบปกติ (ใช้อยู่) -->
+                                        <li><a class="dropdown-item py-2 fw-bold text-warning" href="/walkin?branch_id={{ branch.id }}">🚶 Walk-in (เว็บ)</a></li>
+                                        
+                                        <!-- 2. แบบ LINE LIFF (ซ่อนไว้ อนาคตมาเปิดใช้ตรงนี้) -->
+                                        <!-- 
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item py-2 fw-bold text-success" href="https://liff.line.me/YOUR_LIFF_ID_HERE?branch_id={{ branch.id }}">
+                                                📲 Walk-in (ผ่าน LINE)
+                                            </a>
+                                        </li> 
+                                        -->
+
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item py-2 fw-bold text-info" href="/booking?branch_id={{ branch.id }}">📅 จองล่วงหน้า</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <footer class="text-center text-muted py-4 mt-auto">
+        <small>© 2024 Smart Queue System. All rights reserved.</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>เข้าสู่ระบบ - Smart Queue System</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Kanit", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .auth-card {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 400px;
+      }
+      .nav-pills .nav-link.active {
+        background-color: #764ba2;
+      }
+      .nav-link {
+        color: #666;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-card p-4">
+      <h3 class="text-center fw-bold mb-4 text-primary">
+        🔐 Smart Queue Admin
+      </h3>
+
+      <!-- แสดงข้อความแจ้งเตือน (Flash Messages) -->
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="alert alert-{{ 'danger' if category == 'error' else 'success' }} py-2 text-center"
+      >
+        {{ message }}
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <!-- Tabs เลือก Login / Register -->
+      <ul class="nav nav-pills nav-fill mb-4" id="pills-tab" role="tablist">
+        <li class="nav-item">
+          <button
+            class="nav-link active"
+            id="pills-login-tab"
+            data-bs-toggle="pill"
+            data-bs-target="#pills-login"
+            type="button"
+          >
+            เข้าสู่ระบบ
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            id="pills-register-tab"
+            data-bs-toggle="pill"
+            data-bs-target="#pills-register"
+            type="button"
+          >
+            สมัครสมาชิก
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="pills-tabContent">
+        <!-- ฟอร์มเข้าสู่ระบบ -->
+        <div class="tab-pane fade show active" id="pills-login">
+          <form action="/login" method="POST">
+            <div class="mb-3">
+              <label class="form-label text-muted small">ชื่อผู้ใช้</label>
+              <input
+                type="text"
+                name="username"
+                class="form-control"
+                required
+                placeholder="admin"
+                pattern="[A-Za-z0-9]+"
+                title="กรอกได้เฉพาะภาษาอังกฤษและตัวเลขเท่านั้น"
+                oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')"
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small">รหัสผ่าน</label>
+              <input
+                type="password"
+                name="password"
+                class="form-control"
+                required
+                placeholder="••••••"
+              />
+            </div>
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+              เข้าสู่ระบบ
+            </button>
+          </form>
+        </div>
+
+        <!-- ฟอร์มสมัครสมาชิก -->
+        <div class="tab-pane fade" id="pills-register">
+          <form action="/register" method="POST">
+            <!-- 1. ช่องกรอกรหัสลับร้าน (สำคัญ!) -->
+            <div class="mb-3">
+              <label class="form-label text-danger fw-bold small"
+                >🔑 รหัสลับร้าน (Shop Key)</label
+              >
+              <input
+                type="password"
+                name="secret_key"
+                class="form-control border-danger"
+                placeholder="เฉพาะพนักงานเท่านั้น"
+                required
+              />
+            </div>
+
+            <!-- 2. เลือกสาขาที่จะคุม -->
+            <div class="mb-3">
+              <label class="form-label text-muted small">ประจำสาขา</label>
+              <select name="branch_id" class="form-select" required>
+                <option value="" selected disabled>-- เลือกสาขา --</option>
+                {% for branch in branches %}
+                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <hr />
+
+            <div class="mb-3">
+              <label class="form-label text-muted small">ตั้งชื่อผู้ใช้</label>
+              <input
+                type="text"
+                name="username"
+                class="form-control"
+                required
+                pattern="[A-Za-z0-9]+"
+                title="กรอกได้เฉพาะภาษาอังกฤษและตัวเลขเท่านั้น"
+                oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')"
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small">ตั้งรหัสผ่าน</label>
+              <input
+                type="password"
+                name="password"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small">ยืนยันรหัสผ่าน</label>
+              <input
+                type="password"
+                name="confirm_password"
+                class="form-control"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn-success w-100 fw-bold py-2">
+              สมัครสมาชิกใหม่
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
